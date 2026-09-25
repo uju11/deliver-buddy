@@ -2,6 +2,7 @@ package com.example.deliverybuddy.data
 
 import com.example.deliverybuddy.model.Address
 import com.example.deliverybuddy.model.DeliveryHistoryRecord
+import com.example.deliverybuddy.model.FuelAnalytics
 import com.example.deliverybuddy.model.PetrolPump
 import com.example.deliverybuddy.model.RoutePlan
 import com.example.deliverybuddy.model.Runsheet
@@ -15,6 +16,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -143,16 +145,56 @@ class DeliveryRepository {
         private val _historyRecords = MutableStateFlow(initialHistory)
         private val _vehicleMileage = MutableStateFlow(12.0f)
         private val _fuelPrice = MutableStateFlow(1.50f)
+        private val _currentLocation = MutableStateFlow<Pair<Double, Double>?>(null)
     }
 
     val runsheets: StateFlow<List<Runsheet>> = _runsheets.asStateFlow()
     val historyRecords: StateFlow<List<DeliveryHistoryRecord>> = _historyRecords.asStateFlow()
     val vehicleMileage: StateFlow<Float> = _vehicleMileage.asStateFlow()
     val fuelPrice: StateFlow<Float> = _fuelPrice.asStateFlow()
+    val currentLocation: StateFlow<Pair<Double, Double>?> = _currentLocation.asStateFlow()
 
     fun updateSettings(mileage: Float, fuelPrice: Float) {
         if (mileage > 0f) _vehicleMileage.value = mileage
         if (fuelPrice >= 0f) _fuelPrice.value = fuelPrice
+    }
+
+    fun updateCurrentLocation(lat: Double, lon: Double) {
+        _currentLocation.value = Pair(lat, lon)
+    }
+
+    fun getFuelAnalytics(): FuelAnalytics {
+        val history = _historyRecords.value
+        val active = _runsheets.value
+        val mileage = _vehicleMileage.value
+        val price = _fuelPrice.value
+
+        val totalHistDist = history.sumOf { it.actualDistanceKm }
+        val totalActiveDist = active.sumOf { r ->
+            val totalStops = r.addresses.size
+            val completedStops = r.addresses.count { it.isCompleted }
+            if (totalStops > 0) (completedStops.toFloat() / totalStops) * r.totalDistanceKm else r.totalDistanceKm
+        }
+        val totalKm = totalHistDist + totalActiveDist
+
+        val workingDays = maxOf(1, history.size + 1)
+        val dailyKm = totalKm / workingDays
+
+        val monthlyProjectedKm = dailyKm * 30.0
+        val projectedMonthlyCost = if (mileage > 0f) (monthlyProjectedKm / mileage) * price else 0.0
+
+        val actualMonthlyCost = history.sumOf { it.actualFuelCost } +
+                if (mileage > 0f) (totalActiveDist / mileage) * price else 0.0
+
+        val dailyCost = if (workingDays > 0) actualMonthlyCost / workingDays else projectedMonthlyCost / 30.0
+
+        return FuelAnalytics(
+            totalKmRun = String.format(Locale.getDefault(), "%.1f", totalKm).toDouble(),
+            dailyMileageKm = String.format(Locale.getDefault(), "%.1f", dailyKm).toDouble(),
+            projectedMonthlyFuelCost = String.format(Locale.getDefault(), "%.2f", projectedMonthlyCost).toDouble(),
+            actualMonthlyFuelCost = String.format(Locale.getDefault(), "%.2f", actualMonthlyCost).toDouble(),
+            dailyFuelCost = String.format(Locale.getDefault(), "%.2f", dailyCost).toDouble()
+        )
     }
 
     fun getRunsheetById(id: String): Runsheet? {
@@ -224,7 +266,6 @@ class DeliveryRepository {
 
         _historyRecords.update { listOf(historyRecord) + it }
 
-        // Mark runsheet completed and all addresses completed
         _runsheets.update { currentList ->
             currentList.map { r ->
                 if (r.id == runsheetId) {
@@ -243,8 +284,8 @@ class DeliveryRepository {
         _runsheets.update { currentList ->
             currentList.map { runsheet ->
                 if (runsheet.id == runsheetId) {
-                    val refLat = runsheet.addresses.firstOrNull()?.latitude ?: 37.7749
-                    val refLon = runsheet.addresses.firstOrNull()?.longitude ?: -122.4194
+                    val refLat = _currentLocation.value?.first ?: runsheet.addresses.firstOrNull()?.latitude ?: 37.7749
+                    val refLon = _currentLocation.value?.second ?: runsheet.addresses.firstOrNull()?.longitude ?: -122.4194
 
                     val sortedAddresses = when (sortOrder) {
                         SortOrder.DEFAULT -> runsheet.addresses.sortedBy { it.priority }
@@ -274,12 +315,13 @@ class DeliveryRepository {
         val originalAddresses = runsheet.addresses
         if (originalAddresses.isEmpty()) return null
 
+        // If startAddressId is null, use current location as a virtual start point or first address
+        val currentLoc = _currentLocation.value
         val startAddr = originalAddresses.find { it.id == startAddressId } ?: originalAddresses.first()
         val endAddr = originalAddresses.find { it.id == endAddressId && it.id != startAddr.id }
 
         val remaining = originalAddresses.filter { it.id != startAddr.id && it.id != endAddr?.id }
 
-        // Optimize remaining stops using Nearest Neighbor TSP heuristic starting from startAddr
         val optimizedStops = mutableListOf<Address>()
         optimizedStops.add(startAddr)
 
@@ -298,8 +340,12 @@ class DeliveryRepository {
             optimizedStops.add(endAddr)
         }
 
-        // Calculate total distance in km
         var totalDist = 0.0
+        // If current location is available, add distance from current location to first stop
+        if (currentLoc != null && startAddressId == null) {
+            totalDist += calculateDistance(currentLoc.first, currentLoc.second, optimizedStops.first().latitude, optimizedStops.first().longitude)
+        }
+
         for (i in 0 until optimizedStops.size - 1) {
             val a = optimizedStops[i]
             val b = optimizedStops[i + 1]

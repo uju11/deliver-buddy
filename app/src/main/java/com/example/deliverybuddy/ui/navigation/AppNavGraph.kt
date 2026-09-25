@@ -106,8 +106,12 @@ fun AppNavGraph(
             }
 
             is NavKeys.History -> NavEntry(key) {
+                val fuelAnalytics = viewModel.getFuelAnalytics()
                 HistoryScreen(
                     historyRecords = historyRecords,
+                    fuelAnalytics = fuelAnalytics,
+                    vehicleMileage = vehicleMileage,
+                    fuelPrice = fuelPrice,
                     onBackClick = { backStack.removeLastOrNull() }
                 )
             }

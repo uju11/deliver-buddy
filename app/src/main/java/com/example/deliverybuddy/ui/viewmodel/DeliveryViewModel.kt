@@ -5,6 +5,7 @@ import com.example.deliverybuddy.data.DeliveryRepository
 import com.example.deliverybuddy.data.RunsheetParser
 import com.example.deliverybuddy.data.SortOrder
 import com.example.deliverybuddy.model.DeliveryHistoryRecord
+import com.example.deliverybuddy.model.FuelAnalytics
 import com.example.deliverybuddy.model.PetrolPump
 import com.example.deliverybuddy.model.RoutePlan
 import com.example.deliverybuddy.model.Runsheet
@@ -18,9 +19,18 @@ class DeliveryViewModel(
     val historyRecords: StateFlow<List<DeliveryHistoryRecord>> = repository.historyRecords
     val vehicleMileage: StateFlow<Float> = repository.vehicleMileage
     val fuelPrice: StateFlow<Float> = repository.fuelPrice
+    val currentLocation: StateFlow<Pair<Double, Double>?> = repository.currentLocation
 
     fun updateSettings(mileage: Float, fuelPrice: Float) {
         repository.updateSettings(mileage, fuelPrice)
+    }
+
+    fun updateCurrentLocation(lat: Double, lon: Double) {
+        repository.updateCurrentLocation(lat, lon)
+    }
+
+    fun getFuelAnalytics(): FuelAnalytics {
+        return repository.getFuelAnalytics()
     }
 
     fun getRunsheet(id: String): Runsheet? {

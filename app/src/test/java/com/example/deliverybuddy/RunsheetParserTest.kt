@@ -107,4 +107,17 @@ class RunsheetParserTest {
         assertTrue(updatedPlan.totalDistanceKm >= initialDistance)
         assertTrue(updatedPlan.optimizedStops.any { it.id == pump.id })
     }
+
+    @Test
+    fun testFuelAnalyticsComputation() {
+        val repository = DeliveryRepository()
+        repository.updateSettings(40.0f, 2.0f)
+        val analytics = repository.getFuelAnalytics()
+        assertNotNull(analytics)
+        assertTrue(analytics.totalKmRun >= 0.0)
+        assertTrue(analytics.dailyMileageKm >= 0.0)
+        assertTrue(analytics.projectedMonthlyFuelCost >= 0.0)
+        assertTrue(analytics.actualMonthlyFuelCost >= 0.0)
+        assertTrue(analytics.dailyFuelCost >= 0.0)
+    }
 }
