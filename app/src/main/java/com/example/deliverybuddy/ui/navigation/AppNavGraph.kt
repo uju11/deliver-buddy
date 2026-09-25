@@ -65,10 +65,6 @@ fun AppNavGraph(
                     onParseAndAddRunsheet = { rawText ->
                         viewModel.parseAndAddRunsheets(rawText)
                     },
-                    onCaptureEkart = {
-                        val (_, message) = viewModel.captureOnDemandEkart()
-                        scope.launch { snackbarHostState.showSnackbar(message) }
-                    },
                     onScanParcelLabelText = { rawText ->
                         val msg = viewModel.scanParcelLabel(rawText)
                         scope.launch { snackbarHostState.showSnackbar(msg) }

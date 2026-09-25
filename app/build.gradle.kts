@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.logging.interceptor)
     implementation(libs.material)
     implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.barcode.scanning)
     implementation(libs.moshi.kotlin)
     implementation(libs.okhttp)
     implementation(libs.play.services.location)

@@ -1,13 +1,10 @@
 package com.example.deliverybuddy.ui.screens
 
-import android.accessibilityservice.AccessibilityService
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.text.TextUtils
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,7 +19,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.deliverybuddy.service.EkartAccessibilityService
 import com.example.deliverybuddy.service.FloatingWidgetService
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,10 +38,6 @@ fun SettingsScreen(
         Settings.canDrawOverlays(context)
     } else {
         true
-    }
-
-    val isAccessibilityEnabled = remember {
-        isAccessibilityServiceEnabled(context, EkartAccessibilityService::class.java)
     }
 
     Scaffold(
@@ -130,46 +122,6 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold
                         )
-                    }
-                }
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Ekart Accessibility Auto-Capture",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Automatically parse runsheet addresses, names, and phone numbers from Ekart Field X screens.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Text(
-                        text = "Permission Status: ${if (isAccessibilityEnabled) "Enabled" else "Not Enabled"}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Button(
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Open Android Accessibility Settings")
                     }
                 }
             }
@@ -271,21 +223,4 @@ fun SettingsScreen(
     }
 }
 
-private fun isAccessibilityServiceEnabled(context: Context, serviceClass: Class<out AccessibilityService>): Boolean {
-    val enabledServices = Settings.Secure.getString(
-        context.contentResolver,
-        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-    ) ?: return false
-    val colonSplitter = TextUtils.SimpleStringSplitter(':')
-    colonSplitter.setString(enabledServices)
-    val packageName = context.packageName
-    val serviceName = ComponentName(packageName, serviceClass.name).flattenToString()
-    while (colonSplitter.hasNext()) {
-        val componentName = colonSplitter.next()
-        if (componentName.equals(serviceName, ignoreCase = true) || 
-            (componentName.contains(packageName) && componentName.contains(serviceClass.simpleName))) {
-            return true
-        }
-    }
-    return false
-}
+

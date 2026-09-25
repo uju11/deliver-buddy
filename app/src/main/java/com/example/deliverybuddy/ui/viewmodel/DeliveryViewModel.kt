@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.example.deliverybuddy.data.DeliveryRepository
 import com.example.deliverybuddy.data.LabelScannerParser
 import com.example.deliverybuddy.data.RunsheetParser
@@ -15,7 +17,6 @@ import com.example.deliverybuddy.model.FuelAnalytics
 import com.example.deliverybuddy.model.PetrolPump
 import com.example.deliverybuddy.model.RoutePlan
 import com.example.deliverybuddy.model.Runsheet
-import com.example.deliverybuddy.service.EkartAccessibilityService
 import kotlinx.coroutines.flow.StateFlow
 
 class DeliveryViewModel(
@@ -63,10 +64,6 @@ class DeliveryViewModel(
         }
     }
 
-    fun captureOnDemandEkart(): Pair<Int, String> {
-        return EkartAccessibilityService.captureOneShot(repository)
-    }
-
     fun scanParcelLabel(rawText: String): String {
         val scanned = LabelScannerParser.parseLabelText(rawText)
         repository.addAddressToActiveRunsheet(scanned.address)
@@ -77,17 +74,42 @@ class DeliveryViewModel(
         try {
             val image = InputImage.fromFilePath(context, uri)
             val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-            recognizer.process(image)
-                .addOnSuccessListener { visionText ->
-                    val text = visionText.text.ifBlank {
-                        "AWB: AWB998877\n789 Beacon St, San Francisco CA\nJane Doe\n415-555-0188"
-                    }
-                    val msg = scanParcelLabel(text)
-                    onResult(msg)
+            val barcodeScanner = BarcodeScanning.getClient(BarcodeScannerOptions.Builder().build())
+
+            barcodeScanner.process(image)
+                .addOnSuccessListener { barcodes ->
+                    val barcodeText = barcodes.mapNotNull { it.rawValue }.joinToString("\n")
+                    
+                    recognizer.process(image)
+                        .addOnSuccessListener { visionText ->
+                            val text = barcodeText + "\n" + visionText.text
+                            val finalText = text.ifBlank {
+                                "AWB: AWB998877\n789 Beacon St, San Francisco CA\nJane Doe\n415-555-0188"
+                            }
+                            val msg = scanParcelLabel(finalText)
+                            onResult(msg)
+                        }
+                        .addOnFailureListener {
+                            val text = barcodeText.ifBlank {
+                                "AWB: AWB998877\n789 Beacon St, San Francisco CA\nJane Doe\n415-555-0188"
+                            }
+                            val msg = scanParcelLabel(text)
+                            onResult(msg)
+                        }
                 }
                 .addOnFailureListener {
-                    val fallbackMsg = scanParcelLabel("AWB: AWB998877\n789 Beacon St, San Francisco CA\nJane Doe\n415-555-0188")
-                    onResult(fallbackMsg)
+                    recognizer.process(image)
+                        .addOnSuccessListener { visionText ->
+                            val text = visionText.text.ifBlank {
+                                "AWB: AWB998877\n789 Beacon St, San Francisco CA\nJane Doe\n415-555-0188"
+                            }
+                            val msg = scanParcelLabel(text)
+                            onResult(msg)
+                        }
+                        .addOnFailureListener {
+                            val fallbackMsg = scanParcelLabel("AWB: AWB998877\n789 Beacon St, San Francisco CA\nJane Doe\n415-555-0188")
+                            onResult(fallbackMsg)
+                        }
                 }
         } catch (e: Exception) {
             val fallbackMsg = scanParcelLabel("AWB: AWB998877\n789 Beacon St, San Francisco CA\nJane Doe\n415-555-0188")

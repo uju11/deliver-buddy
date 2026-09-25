@@ -372,34 +372,46 @@ fun RoutePlanScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    itemsIndexed(currentRoutePlan?.optimizedStops.orEmpty()) { index, address ->
+                    val stops = currentRoutePlan?.optimizedStops.orEmpty()
+                    itemsIndexed(stops) { index, address ->
                         val isFuelStop = address.id.startsWith("pump_")
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isFuelStop)
-                                    MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-                                else
-                                    MaterialTheme.colorScheme.surface
-                            ),
-                            border = BorderStroke(
-                                1.dp,
-                                if (isFuelStop) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-                            )
+                        val isFirst = index == 0
+                        val isLast = index == stops.size - 1
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min)
                         ) {
-                            Row(
+                            // Timeline visual column
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .width(48.dp)
+                                    .fillMaxHeight()
                             ) {
+                                // Top line (if not first)
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.dp)
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                ) {
+                                    if (!isFirst) {
+                                        Surface(
+                                            modifier = Modifier.fillMaxSize(),
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                        ) {}
+                                    }
+                                }
+
+                                // Node
                                 Surface(
                                     shape = MaterialTheme.shapes.small,
-                                    color = if (isFuelStop) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.surfaceVariant
+                                    color = if (isFuelStop) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.padding(vertical = 4.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier.size(32.dp),
@@ -412,16 +424,58 @@ fun RoutePlanScreen(
                                                 modifier = Modifier.size(18.dp),
                                                 tint = MaterialTheme.colorScheme.onTertiary
                                             )
+                                        } else if (isFirst) {
+                                            Text("Start", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        } else if (isLast) {
+                                            Text("End", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                                         } else {
                                             Text(
-                                                text = "${index + 1}",
-                                                fontWeight = FontWeight.Bold
+                                                text = "${index}",
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
                                         }
                                     }
                                 }
 
-                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                // Bottom line (if not last)
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.dp)
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                ) {
+                                    if (!isLast) {
+                                        Surface(
+                                            modifier = Modifier.fillMaxSize(),
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                        ) {}
+                                    }
+                                }
+                            }
+
+                            // Content card
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isFuelStop)
+                                        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
+                                    else
+                                        MaterialTheme.colorScheme.surface
+                                ),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isFuelStop) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
                                     Text(
                                         text = address.street,
                                         style = MaterialTheme.typography.bodyLarge,

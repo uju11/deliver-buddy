@@ -30,7 +30,6 @@ fun RunsheetListScreen(
     onSettingsClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onParseAndAddRunsheet: (String) -> Unit,
-    onCaptureEkart: () -> Unit,
     onScanParcelLabelText: (String) -> Unit,
     onScanParcelLabelImageClick: () -> Unit
 ) {
@@ -48,9 +47,6 @@ fun RunsheetListScreen(
             TopAppBar(
                 title = { Text("Delivery Dashboard", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = onCaptureEkart) {
-                        Icon(Icons.Rounded.CameraAlt, contentDescription = "Capture Deliveries")
-                    }
                     IconButton(onClick = { showScanLabelDialog = true }) {
                         Icon(Icons.Rounded.QrCodeScanner, contentDescription = "Scan Parcel Label")
                     }
@@ -75,13 +71,6 @@ fun RunsheetListScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FloatingActionButton(
-                    onClick = onCaptureEkart,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                ) {
-                    Icon(Icons.Rounded.CameraAlt, contentDescription = "Capture Deliveries")
-                }
                 ExtendedFloatingActionButton(
                     onClick = { showScanLabelDialog = true },
                     icon = { Icon(Icons.Rounded.QrCodeScanner, contentDescription = null) },
@@ -149,7 +138,7 @@ fun RunsheetListScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No runsheets available. Tap 'Scan Label' or 'Capture Deliveries'.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("No runsheets available. Tap 'Scan Label'.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(

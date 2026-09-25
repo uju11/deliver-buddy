@@ -326,9 +326,9 @@ class DeliveryRepository {
         // If startAddressId is null, use current location as a virtual start point or first address
         val currentLoc = _currentLocation.value
         val startAddr = originalAddresses.find { it.id == startAddressId } ?: originalAddresses.first()
-        val endAddr = originalAddresses.find { it.id == endAddressId && it.id != startAddr.id }
+        val endAddr = originalAddresses.find { it.id == endAddressId }
 
-        val remaining = originalAddresses.filter { it.id != startAddr.id && it.id != endAddr?.id }
+        val remaining = originalAddresses.filter { it.id != startAddr.id && (endAddr == null || it.id != endAddr.id) }
 
         val optimizedStops = mutableListOf<Address>()
         optimizedStops.add(startAddr)

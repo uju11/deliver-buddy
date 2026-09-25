@@ -264,26 +264,6 @@ fun FloatingWidgetContent(
                 }
             }
 
-            // Capture Deliveries Button in Floating Widget
-            Button(
-                onClick = {
-                    val (_, message) = EkartAccessibilityService.captureOneShot(repository)
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(36.dp),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.CameraAlt,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Capture Deliveries", style = MaterialTheme.typography.labelMedium)
-            }
-
             if (activeRunsheet == null || nextStop == null) {
                 Text(
                     text = "All deliveries completed!",
