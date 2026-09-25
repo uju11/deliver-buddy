@@ -154,6 +154,14 @@ class DeliveryRepository {
     val fuelPrice: StateFlow<Float> = _fuelPrice.asStateFlow()
     val currentLocation: StateFlow<Pair<Double, Double>?> = _currentLocation.asStateFlow()
 
+    fun resetForTesting() {
+        _runsheets.value = initialRunsheets
+        _historyRecords.value = initialHistory
+        _vehicleMileage.value = 12.0f
+        _fuelPrice.value = 1.50f
+        _currentLocation.value = null
+    }
+
     fun updateSettings(mileage: Float, fuelPrice: Float) {
         if (mileage > 0f) _vehicleMileage.value = mileage
         if (fuelPrice >= 0f) _fuelPrice.value = fuelPrice
@@ -434,6 +442,37 @@ class DeliveryRepository {
             estimatedDurationMinutes = durationMinutes,
             polylinePoints = stops.map { Pair(it.latitude, it.longitude) }
         )
+    }
+
+    fun addAddressToActiveRunsheet(address: Address) {
+        _runsheets.update { currentList ->
+            val active = currentList.find { it.status == RunsheetStatus.IN_PROGRESS } ?: currentList.firstOrNull()
+            if (active != null) {
+                currentList.map { r ->
+                    if (r.id == active.id) {
+                        r.copy(
+                            addresses = listOf(address) + r.addresses,
+                            totalDistanceKm = r.totalDistanceKm + 1.5,
+                            estimatedDurationMinutes = r.estimatedDurationMinutes + 10
+                        )
+                    } else {
+                        r
+                    }
+                }
+            } else {
+                val newRunsheet = Runsheet(
+                    id = "run_scanned_${System.currentTimeMillis()}",
+                    title = "Scanned Parcels Runsheet",
+                    date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()),
+                    driverName = "Driver",
+                    status = RunsheetStatus.IN_PROGRESS,
+                    addresses = listOf(address),
+                    totalDistanceKm = 3.5,
+                    estimatedDurationMinutes = 15
+                )
+                listOf(newRunsheet) + currentList
+            }
+        }
     }
 
     private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {

@@ -15,10 +15,12 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Navigation
@@ -27,6 +29,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.deliverybuddy.MainActivity
@@ -117,12 +120,41 @@ class FloatingWidgetService : Service() {
             y = 150
         }
 
-        val composeView = ComposeView(this)
-
         var initialX = 0
         var initialY = 0
         var initialTouchX = 0f
         var initialTouchY = 0f
+
+        val composeView = ComposeView(this).apply {
+            setContent {
+                MaterialTheme(
+                    colorScheme = lightColorScheme()
+                ) {
+                    FloatingWidgetContent(
+                        repository = repository,
+                        onClose = { stopSelf() },
+                        onNavigate = { address ->
+                            val gmmIntentUri = Uri.parse("google.navigation:q=${address.latitude},${address.longitude}&mode=d")
+                            val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
+                                setPackage("com.google.android.apps.maps")
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            try {
+                                startActivity(mapIntent)
+                            } catch (e: Exception) {
+                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=${address.latitude},${address.longitude}")).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                startActivity(browserIntent)
+                            }
+                        },
+                        onMarkDelivered = { runsheetId, addressId ->
+                            repository.updateAddressStatus(runsheetId, addressId, true)
+                        }
+                    )
+                }
+            }
+        }
 
         floatingView = composeView
         floatingView.setOnTouchListener { _, event ->
@@ -141,35 +173,6 @@ class FloatingWidgetService : Service() {
                     true
                 }
                 else -> false
-            }
-        }
-
-        composeView.setContent {
-            MaterialTheme(
-                colorScheme = lightColorScheme()
-            ) {
-                FloatingWidgetContent(
-                    repository = repository,
-                    onClose = { stopSelf() },
-                    onNavigate = { address ->
-                        val gmmIntentUri = Uri.parse("google.navigation:q=${address.latitude},${address.longitude}&mode=d")
-                        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
-                            setPackage("com.google.android.apps.maps")
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        try {
-                            startActivity(mapIntent)
-                        } catch (e: Exception) {
-                            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=${address.latitude},${address.longitude}")).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            startActivity(browserIntent)
-                        }
-                    },
-                    onMarkDelivered = { runsheetId, addressId ->
-                        repository.updateAddressStatus(runsheetId, addressId, true)
-                    }
-                )
             }
         }
 
@@ -201,6 +204,7 @@ fun FloatingWidgetContent(
     onNavigate: (Address) -> Unit,
     onMarkDelivered: (String, String) -> Unit
 ) {
+    val context = LocalContext.current
     val runsheets by repository.runsheets.collectAsState()
     val mileage by repository.vehicleMileage.collectAsState()
     val fuelPrice by repository.fuelPrice.collectAsState()
@@ -258,6 +262,26 @@ fun FloatingWidgetContent(
                         modifier = Modifier.size(16.dp)
                     )
                 }
+            }
+
+            // Capture Deliveries Button in Floating Widget
+            Button(
+                onClick = {
+                    val (_, message) = EkartAccessibilityService.captureOneShot(repository)
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(36.dp),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.CameraAlt,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Capture Deliveries", style = MaterialTheme.typography.labelMedium)
             }
 
             if (activeRunsheet == null || nextStop == null) {

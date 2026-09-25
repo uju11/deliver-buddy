@@ -7,8 +7,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.LocalShipping
+import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,22 +25,35 @@ import com.example.deliverybuddy.model.RunsheetStatus
 @Composable
 fun RunsheetListScreen(
     runsheets: List<Runsheet>,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onRunsheetClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onParseAndAddRunsheet: (String) -> Unit
+    onParseAndAddRunsheet: (String) -> Unit,
+    onCaptureEkart: () -> Unit,
+    onScanParcelLabelText: (String) -> Unit,
+    onScanParcelLabelImageClick: () -> Unit
 ) {
     var showImportDialog by remember { mutableStateOf(false) }
+    var showScanLabelDialog by remember { mutableStateOf(false) }
     var rawTextPrompt by remember { mutableStateOf("") }
+    var labelTextPrompt by remember { mutableStateOf("") }
 
     val totalStops = runsheets.sumOf { it.addresses.size }
     val completedStops = runsheets.sumOf { r -> r.addresses.count { it.isCompleted } }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Delivery Dashboard", fontWeight = FontWeight.Bold) },
                 actions = {
+                    IconButton(onClick = onCaptureEkart) {
+                        Icon(Icons.Rounded.CameraAlt, contentDescription = "Capture Deliveries")
+                    }
+                    IconButton(onClick = { showScanLabelDialog = true }) {
+                        Icon(Icons.Rounded.QrCodeScanner, contentDescription = "Scan Parcel Label")
+                    }
                     IconButton(onClick = onHistoryClick) {
                         Icon(Icons.Rounded.History, contentDescription = "Delivery History")
                     }
@@ -56,13 +71,25 @@ fun RunsheetListScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showImportDialog = true },
-                icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                text = { Text("Import Runsheet") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FloatingActionButton(
+                    onClick = onCaptureEkart,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Icon(Icons.Rounded.CameraAlt, contentDescription = "Capture Deliveries")
+                }
+                ExtendedFloatingActionButton(
+                    onClick = { showScanLabelDialog = true },
+                    icon = { Icon(Icons.Rounded.QrCodeScanner, contentDescription = null) },
+                    text = { Text("Scan Label") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            }
         },
         contentWindowInsets = WindowInsets.safeDrawing
     ) { innerPadding ->
@@ -122,7 +149,7 @@ fun RunsheetListScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No runsheets available. Tap '+' to import.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("No runsheets available. Tap 'Scan Label' or 'Capture Deliveries'.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(
@@ -138,6 +165,61 @@ fun RunsheetListScreen(
                 }
             }
         }
+    }
+
+    if (showScanLabelDialog) {
+        AlertDialog(
+            onDismissRequest = { showScanLabelDialog = false },
+            title = { Text("Parcel Delivery Label Scanner", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Capture or pick a parcel label photo, or paste label text below to extract address, name, phone, and AWB:", style = MaterialTheme.typography.bodyMedium)
+                    
+                    Button(
+                        onClick = {
+                            showScanLabelDialog = false
+                            onScanParcelLabelImageClick()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Rounded.CameraAlt, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Pick Label Photo / Camera")
+                    }
+
+                    HorizontalDivider()
+
+                    Text("Or paste parcel label text:", style = MaterialTheme.typography.labelMedium)
+                    OutlinedTextField(
+                        value = labelTextPrompt,
+                        onValueChange = { labelTextPrompt = it },
+                        placeholder = { Text("AWB: EKART987654\n123 Market St, San Francisco CA 94105\nJohn Doe\n415-555-0192") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        maxLines = 5
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (labelTextPrompt.isNotBlank()) {
+                            onScanParcelLabelText(labelTextPrompt)
+                            labelTextPrompt = ""
+                            showScanLabelDialog = false
+                        }
+                    }
+                ) {
+                    Text("Extract & Add", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showScanLabelDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showImportDialog) {

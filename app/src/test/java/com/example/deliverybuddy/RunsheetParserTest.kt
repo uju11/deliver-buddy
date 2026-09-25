@@ -4,9 +4,15 @@ import com.example.deliverybuddy.data.DeliveryRepository
 import com.example.deliverybuddy.data.RunsheetParser
 import com.example.deliverybuddy.data.SortOrder
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 
 class RunsheetParserTest {
+
+    @Before
+    fun setUp() {
+        DeliveryRepository().resetForTesting()
+    }
 
     @Test
     fun testParseSingleRunsheet() {

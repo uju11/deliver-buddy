@@ -1,9 +1,10 @@
 package com.example.deliverybuddy.ui.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
@@ -13,6 +14,7 @@ import com.example.deliverybuddy.ui.screens.RunsheetDetailScreen
 import com.example.deliverybuddy.ui.screens.RunsheetListScreen
 import com.example.deliverybuddy.ui.screens.SettingsScreen
 import com.example.deliverybuddy.ui.viewmodel.DeliveryViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavGraph(
@@ -34,8 +36,23 @@ fun AppNavGraph(
     ) { key ->
         when (key) {
             is NavKeys.RunsheetList -> NavEntry(key) {
+                val context = LocalContext.current
+                val snackbarHostState = remember { SnackbarHostState() }
+                val scope = rememberCoroutineScope()
+
+                val imagePickerLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.GetContent()
+                ) { uri ->
+                    if (uri != null) {
+                        viewModel.scanParcelLabelFromImage(context, uri) { msg ->
+                            scope.launch { snackbarHostState.showSnackbar(msg) }
+                        }
+                    }
+                }
+
                 RunsheetListScreen(
                     runsheets = runsheets,
+                    snackbarHostState = snackbarHostState,
                     onRunsheetClick = { runsheetId ->
                         backStack.add(NavKeys.RunsheetDetail(runsheetId))
                     },
@@ -47,6 +64,17 @@ fun AppNavGraph(
                     },
                     onParseAndAddRunsheet = { rawText ->
                         viewModel.parseAndAddRunsheets(rawText)
+                    },
+                    onCaptureEkart = {
+                        val (_, message) = viewModel.captureOnDemandEkart()
+                        scope.launch { snackbarHostState.showSnackbar(message) }
+                    },
+                    onScanParcelLabelText = { rawText ->
+                        val msg = viewModel.scanParcelLabel(rawText)
+                        scope.launch { snackbarHostState.showSnackbar(msg) }
+                    },
+                    onScanParcelLabelImageClick = {
+                        imagePickerLauncher.launch("image/*")
                     }
                 )
             }
