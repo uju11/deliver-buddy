@@ -27,128 +27,127 @@ enum class SortOrder {
 }
 
 class DeliveryRepository {
-    private val sampleAddresses1 = listOf(
-        Address(
-            id = "addr_1",
-            street = "123 Market St",
-            city = "San Francisco, CA",
-            postalCode = "94105",
-            contactName = "Alice Johnson",
-            phoneNumber = "415-555-0192",
-            deliveryNotes = "Leave at front desk",
-            latitude = 37.7890,
-            longitude = -122.3970,
-            isCompleted = true,
-            priority = 1
-        ),
-        Address(
-            id = "addr_2",
-            street = "456 Mission St",
-            city = "San Francisco, CA",
-            postalCode = "94105",
-            contactName = "Bob Smith",
-            phoneNumber = "415-555-0143",
-            deliveryNotes = "Call upon arrival",
-            latitude = 37.7850,
-            longitude = -122.3990,
-            isCompleted = false,
-            priority = 2
-        ),
-        Address(
-            id = "addr_3",
-            street = "789 Howard St",
-            city = "San Francisco, CA",
-            postalCode = "94103",
-            contactName = "Charlie Davis",
-            phoneNumber = "415-555-0188",
-            deliveryNotes = "Side entrance",
-            latitude = 37.7820,
-            longitude = -122.4010,
-            isCompleted = false,
-            priority = 1
+    companion object {
+        private val sampleAddresses1 = listOf(
+            Address(
+                id = "addr_1",
+                street = "123 Market St",
+                city = "San Francisco, CA",
+                postalCode = "94105",
+                contactName = "Alice Johnson",
+                phoneNumber = "415-555-0192",
+                deliveryNotes = "Leave at front desk",
+                latitude = 37.7890,
+                longitude = -122.3970,
+                isCompleted = true,
+                priority = 1
+            ),
+            Address(
+                id = "addr_2",
+                street = "456 Mission St",
+                city = "San Francisco, CA",
+                postalCode = "94105",
+                contactName = "Bob Smith",
+                phoneNumber = "415-555-0143",
+                deliveryNotes = "Call upon arrival",
+                latitude = 37.7850,
+                longitude = -122.3990,
+                isCompleted = false,
+                priority = 2
+            ),
+            Address(
+                id = "addr_3",
+                street = "789 Howard St",
+                city = "San Francisco, CA",
+                postalCode = "94103",
+                contactName = "Charlie Davis",
+                phoneNumber = "415-555-0188",
+                deliveryNotes = "Side entrance",
+                latitude = 37.7820,
+                longitude = -122.4010,
+                isCompleted = false,
+                priority = 1
+            )
         )
-    )
 
-    private val sampleAddresses2 = listOf(
-        Address(
-            id = "addr_4",
-            street = "1000 Broadway",
-            city = "Oakland, CA",
-            postalCode = "94607",
-            contactName = "Diana Prince",
-            phoneNumber = "510-555-0122",
-            deliveryNotes = "Ring doorbell twice",
-            latitude = 37.8044,
-            longitude = -122.2711,
-            isCompleted = false,
-            priority = 1
-        ),
-        Address(
-            id = "addr_5",
-            street = "200 Grand Ave",
-            city = "Oakland, CA",
-            postalCode = "94610",
-            contactName = "Bruce Wayne",
-            phoneNumber = "510-555-0199",
-            deliveryNotes = "Secure delivery zone",
-            latitude = 37.8100,
-            longitude = -122.2580,
-            isCompleted = false,
-            priority = 2
+        private val sampleAddresses2 = listOf(
+            Address(
+                id = "addr_4",
+                street = "1000 Broadway",
+                city = "Oakland, CA",
+                postalCode = "94607",
+                contactName = "Diana Prince",
+                phoneNumber = "510-555-0122",
+                deliveryNotes = "Ring doorbell twice",
+                latitude = 37.8044,
+                longitude = -122.2711,
+                isCompleted = false,
+                priority = 1
+            ),
+            Address(
+                id = "addr_5",
+                street = "200 Grand Ave",
+                city = "Oakland, CA",
+                postalCode = "94610",
+                contactName = "Bruce Wayne",
+                phoneNumber = "510-555-0199",
+                deliveryNotes = "Secure delivery zone",
+                latitude = 37.8100,
+                longitude = -122.2580,
+                isCompleted = false,
+                priority = 2
+            )
         )
-    )
 
-    private val initialRunsheets = listOf(
-        Runsheet(
-            id = "run_1",
-            title = "Downtown Express Dispatch",
-            date = "2025-05-20",
-            driverName = "John Driver",
-            status = RunsheetStatus.IN_PROGRESS,
-            addresses = sampleAddresses1,
-            totalDistanceKm = 12.5,
-            estimatedDurationMinutes = 45
-        ),
-        Runsheet(
-            id = "run_2",
-            title = "East Bay Bulk Delivery",
-            date = "2025-05-20",
-            driverName = "John Driver",
-            status = RunsheetStatus.PENDING,
-            addresses = sampleAddresses2,
-            totalDistanceKm = 24.0,
-            estimatedDurationMinutes = 90
+        private val initialRunsheets = listOf(
+            Runsheet(
+                id = "run_1",
+                title = "Downtown Express Dispatch",
+                date = "2025-05-20",
+                driverName = "John Driver",
+                status = RunsheetStatus.IN_PROGRESS,
+                addresses = sampleAddresses1,
+                totalDistanceKm = 12.5,
+                estimatedDurationMinutes = 45
+            ),
+            Runsheet(
+                id = "run_2",
+                title = "East Bay Bulk Delivery",
+                date = "2025-05-20",
+                driverName = "John Driver",
+                status = RunsheetStatus.PENDING,
+                addresses = sampleAddresses2,
+                totalDistanceKm = 24.0,
+                estimatedDurationMinutes = 90
+            )
         )
-    )
 
-    private val initialHistory = listOf(
-        DeliveryHistoryRecord(
-            id = "hist_1",
-            runsheetId = "run_archived_1",
-            title = "Historic Morning Dispatch",
-            timestamp = "2025-05-19 14:30",
-            date = "2025-05-19",
-            driverName = "John Driver",
-            totalStops = 4,
-            completedStops = 4,
-            totalDistanceKm = 18.0,
-            actualDistanceKm = 17.5,
-            projectedFuelCost = 2.25,
-            actualFuelCost = 2.18
+        private val initialHistory = listOf(
+            DeliveryHistoryRecord(
+                id = "hist_1",
+                runsheetId = "run_archived_1",
+                title = "Historic Morning Dispatch",
+                timestamp = "2025-05-19 14:30",
+                date = "2025-05-19",
+                driverName = "John Driver",
+                totalStops = 4,
+                completedStops = 4,
+                totalDistanceKm = 18.0,
+                actualDistanceKm = 17.5,
+                projectedFuelCost = 2.25,
+                actualFuelCost = 2.18
+            )
         )
-    )
 
-    private val _runsheets = MutableStateFlow(initialRunsheets)
+        private val _runsheets = MutableStateFlow(initialRunsheets)
+        private val _historyRecords = MutableStateFlow(initialHistory)
+        private val _vehicleMileage = MutableStateFlow(12.0f)
+        private val _fuelPrice = MutableStateFlow(1.50f)
+    }
+
     val runsheets: StateFlow<List<Runsheet>> = _runsheets.asStateFlow()
-
-    private val _historyRecords = MutableStateFlow(initialHistory)
     val historyRecords: StateFlow<List<DeliveryHistoryRecord>> = _historyRecords.asStateFlow()
-
-    // Settings for Vehicle Mileage (km per liter) and Fuel Price ($ per liter)
-    private val _vehicleMileage = MutableStateFlow(12.0f)
     val vehicleMileage: StateFlow<Float> = _vehicleMileage.asStateFlow()
-
-    private val _fuelPrice = MutableStateFlow(1.50f)
     val fuelPrice: StateFlow<Float> = _fuelPrice.asStateFlow()
 
     fun updateSettings(mileage: Float, fuelPrice: Float) {
